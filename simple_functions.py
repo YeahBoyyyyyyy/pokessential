@@ -154,6 +154,29 @@ def search_pokemon_list_from_types(type1, type2=None):
     
     return pokemon_list
 
+def get_ability_name_translation(ability_name, target_language="fr"):
+    """
+    Retourne la traduction du nom d'une capacité dans la langue spécifiée.
+    
+    Args:
+        ability_name: Nom du talent en anglais
+        target_language: Code de la langue cible (ex: "fr", "es", etc.)
+    
+    Returns:
+        Nom traduit du talent
+    """
+    url = f"https://pokeapi.co/api/v2/ability/{ability_name}"
+    response = requests.get(url)
+    ability_data = response.json()
+    
+    translated_name = None
+    for entry in ability_data["names"]:
+        if entry["language"]["name"] == target_language:
+            translated_name = entry["name"]
+            break
+    
+    return translated_name
+
 def get_ability_description(ability_name, language="en"):
     """
     Retourne la description d'une capacité dans la langue spécifiée.
@@ -174,21 +197,149 @@ def get_ability_description(ability_name, language="en"):
     response = requests.get(url)
     ability_data = response.json()
     desc = None
-    name = None
+
     for entry in ability_data["flavor_text_entries"][::-1]: # On prend la dernière entrée pour avoir la description la plus récente
         print(entry)
         if entry["language"]["name"] == language:
             desc = entry["flavor_text"].replace("\n", " ").replace("\f", " ")
             break
-    for entry in ability_data["names"]:
-        if entry["language"]["name"] == language:
-            name = entry["name"]
-            break
+    
+    name = get_ability_name_translation(ability_name, target_language=language)
+
     return name, desc
+
+def get_pokemon_name_translation(pokemon_name, target_language="fr"):
+    """
+    Retourne la traduction du nom d'un Pokémon dans la langue spécifiée.
+    
+    Args:
+        pokemon_name: Nom du Pokémon en anglais
+        target_language: Code de la langue cible (ex: "fr", "es", etc.)
+    
+    Returns:
+        Nom traduit du Pokémon
+    """
+    url = f"https://pokeapi.co/api/v2/pokemon-species/{pokemon_name}"
+    response = requests.get(url)
+    species_data = response.json()
+    
+    translated_name = None
+    for entry in species_data["names"]:
+        if entry["language"]["name"] == target_language:
+            translated_name = entry["name"]
+            break
+    
+    return translated_name
+
+def download_pokemon_cry(pokemon_name):
+    """
+    Télécharge le cri d'un Pokémon depuis PokéAPI.
+    
+    Args:
+        pokemon_name: Nom du Pokémon
+    
+    Returns:
+        URL du fichier audio du cri
+    """
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name}"
+    response = requests.get(url)
+    poke = response.json()
+    
+    cry_url = poke["cries"].get("latest")
+    return cry_url
+
+def get_pokemon_base_stats(pokemon_name):
+    """
+    Retourne les statistiques de base d'un Pokémon.
+    
+    Args:
+        pokemon_name: Nom du Pokémon
+    
+    Returns:
+        Dictionnaire des statistiques de base
+    """
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name}"
+    response = requests.get(url)
+    poke = response.json()
+    
+    base_stats = {stat["stat"]["name"]: stat["base_stat"] for stat in poke["stats"]}
+    return base_stats
+
+def get_pokemon_height_weight(pokemon_name):
+    """
+    Retourne la taille et le poids d'un Pokémon.
+    
+    Args:
+        pokemon_name: Nom du Pokémon
+    
+    Returns:
+        Tuple (taille en décimètres, poids en hectogrammes)
+    """
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name}"
+    response = requests.get(url)
+    poke = response.json()
+    
+    height = poke["height"]
+    weight = poke["weight"]
+    return height, weight
+
+def get_pokemon_abilities(pokemon_name):
+    """
+    Retourne les capacités d'un Pokémon.
+    
+    Args:
+        pokemon_name: Nom du Pokémon
+    
+    Returns:
+        Liste des noms des capacités
+    """
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name}"
+    response = requests.get(url)
+    poke = response.json()
+    
+    abilities = [ability["ability"]["name"] for ability in poke["abilities"]]
+    return abilities
+
+def get_pokeball_list():
+    """
+    Retourne la liste des Pokéballs disponibles dans PokéAPI.
+    
+    Returns:
+        Liste des noms des Pokéballs
+    """
+    url1 = "https://pokeapi.co/api/v2/item-category/33/"
+    url2 = "https://pokeapi.co/api/v2/item-category/34/"
+    url3 = "https://pokeapi.co/api/v2/item-category/39/"
+    response1 = requests.get(url1)
+    response2 = requests.get(url2)
+    response3 = requests.get(url3)
+    category_data1 = response1.json()
+    category_data2 = response2.json()
+    category_data3 = response3.json()
+    pokeballs = [item["name"] for item in category_data1["items"]]
+    pokeballs += [item["name"] for item in category_data2["items"]]
+    pokeballs += [item["name"] for item in category_data3["items"]]
+    return pokeballs
+
+def get_pokeball_sprite(pokeball_name):
+    """
+    Retourne l'URL du sprite d'une Pokéball.
+    
+    Args:
+        pokeball_name: Nom de la Pokéball
+    
+    Returns:
+        URL du sprite de la Pokéball
+    """
+    url = f"https://pokeapi.co/api/v2/item/{pokeball_name}"
+    response = requests.get(url)
+    item_data = response.json()
+    
+    sprite_url = item_data["sprites"]["default"]
+    return sprite_url
 
 if __name__ == "__main__":
     # Exemples d'utilisation:
-    list = get_ability_description("drizzle", language="fr")
-    print(list)
-
+    print(get_pokeball_list())
+    print(get_pokeball_sprite("poke-ball"))
     pass
