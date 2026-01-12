@@ -1,5 +1,6 @@
 import requests
 from PIL import Image
+import urllib.request
 
 GENERATION_DICT = {
     "1": "generation-i",
@@ -13,7 +14,7 @@ GENERATION_DICT = {
     "9": "generation-ix",
 }
 
-def open_poke_sprite(pokemon_name, generation=None, game_version=None, shiny=False, female=False):
+def get_poke_sprite(pokemon_name, generation=None, game_version=None, shiny=False, female=False, showdown_sprite=False, home_sprite=False, official_artwork=False):
     """
     Affiche le sprite d'un Pokémon avec différentes options.
     
@@ -31,7 +32,27 @@ def open_poke_sprite(pokemon_name, generation=None, game_version=None, shiny=Fal
     # Déterminer quel sprite utiliser
     sprite_url = None
     
-    if generation and str(generation) in GENERATION_DICT:
+    if official_artwork:
+        sprite_url = poke["sprites"]["other"]["official-artwork"]["front_default"] if not shiny else poke["sprites"]["other"]["official-artwork"]["front_shiny"]
+    elif home_sprite:
+        if shiny and female:
+            sprite_url = poke["sprites"]["other"]["home"]["front_shiny_female"]
+        elif shiny:
+            sprite_url = poke["sprites"]["other"]["home"]["front_shiny"]
+        elif female:
+            sprite_url = poke["sprites"]["other"]["home"]["front_female"]
+        else:
+            sprite_url = poke["sprites"]["other"]["home"]["front_default"]
+    elif showdown_sprite:
+        if shiny and female:
+            sprite_url = poke["sprites"]["other"]["showdown"]["front_shiny_female"]
+        elif shiny:
+            sprite_url = poke["sprites"]["other"]["showdown"]["front_shiny"]
+        elif female:
+            sprite_url = poke["sprites"]["other"]["showdown"]["front_female"]
+        else:
+            sprite_url = poke["sprites"]["other"]["showdown"]["front_default"]
+    elif generation and str(generation) in GENERATION_DICT:
         # Sprite d'une génération spécifique
         gen_key = GENERATION_DICT[str(generation)]
         versions = poke["sprites"]["versions"].get(gen_key, {})
@@ -70,22 +91,19 @@ def open_poke_sprite(pokemon_name, generation=None, game_version=None, shiny=Fal
             sprite_url = poke["sprites"].get("front_default")
     
     if sprite_url:
-        response = requests.get(sprite_url, stream=True)
-        img = Image.open(response.raw)
-        img.show()
-        print(f"Sprite affiché: {sprite_url}")
+        return sprite_url
     else:
-        print(f"Sprite non disponible pour les options demandées (shiny={shiny}, female={female}, generation={generation})")
+        # Prendre celui du home normal ou shiny si pas dispo
+        sprite_url = poke["sprites"]["other"]["home"]["front_default"] if not shiny else poke["sprites"]["other"]["home"]["front_shiny"]
+        return sprite_url
 
 def import_all_learned_moves(pokemon_name, generation=None):
     """
     Importe et retourne toutes les attaques apprises par un Pokémon. 
     Prendre la dernière génération où le pokémon est si generation no précisée.
-    
     Args:
         pokemon_name: Nom du Pokémon
         generation: Génération spécifique (1-9) ou None pour la dernière génération et on cherche la dernière
-    
     Returns:
         Liste des noms des attaques apprises
     """
@@ -112,10 +130,8 @@ def get_last_pokemon_generation(pokemon_name):
 def get_pokemon_types(pokemon_name):
     """
     Retourne les types d'un Pokémon donné.
-    
     Args:
         pokemon_name: Nom du Pokémon
-    
     Returns:
         Liste des types du Pokémon
     """
@@ -126,14 +142,12 @@ def get_pokemon_types(pokemon_name):
     types = [t["type"]["name"] for t in poke["types"]]
     return types
 
-def search_pokemon_list_from_types(type1, type2=None):
+def get_pokemon_list_from_types(type1, type2=None):
     """
     Recherche des Pokémon par types.
-    
     Args:
         type1: Premier type
         type2: Deuxième type (optionnel)
-    
     Returns:
         Liste des noms des Pokémon correspondant aux types
     """
@@ -157,11 +171,9 @@ def search_pokemon_list_from_types(type1, type2=None):
 def get_ability_name_translation(ability_name, target_language="fr"):
     """
     Retourne la traduction du nom d'une capacité dans la langue spécifiée.
-    
     Args:
         ability_name: Nom du talent en anglais
         target_language: Code de la langue cible (ex: "fr", "es", etc.)
-    
     Returns:
         Nom traduit du talent
     """
@@ -179,8 +191,7 @@ def get_ability_name_translation(ability_name, target_language="fr"):
 
 def get_ability_description(ability_name, language="en"):
     """
-    Retourne la description d'une capacité dans la langue spécifiée.
-    
+    Retourne la description d'une capacité dans la langue spécifiée. 
     Args:
         ability_name: Nom du talent
         language: Code de la langue (ex: "en", "fr", etc.)
@@ -211,11 +222,9 @@ def get_ability_description(ability_name, language="en"):
 def get_pokemon_name_translation(pokemon_name, target_language="fr"):
     """
     Retourne la traduction du nom d'un Pokémon dans la langue spécifiée.
-    
     Args:
         pokemon_name: Nom du Pokémon en anglais
         target_language: Code de la langue cible (ex: "fr", "es", etc.)
-    
     Returns:
         Nom traduit du Pokémon
     """
@@ -234,10 +243,8 @@ def get_pokemon_name_translation(pokemon_name, target_language="fr"):
 def download_pokemon_cry(pokemon_name):
     """
     Télécharge le cri d'un Pokémon depuis PokéAPI.
-    
     Args:
         pokemon_name: Nom du Pokémon
-    
     Returns:
         URL du fichier audio du cri
     """
@@ -251,10 +258,8 @@ def download_pokemon_cry(pokemon_name):
 def get_pokemon_base_stats(pokemon_name):
     """
     Retourne les statistiques de base d'un Pokémon.
-    
     Args:
         pokemon_name: Nom du Pokémon
-    
     Returns:
         Dictionnaire des statistiques de base
     """
@@ -268,10 +273,8 @@ def get_pokemon_base_stats(pokemon_name):
 def get_pokemon_height_weight(pokemon_name):
     """
     Retourne la taille et le poids d'un Pokémon.
-    
     Args:
         pokemon_name: Nom du Pokémon
-    
     Returns:
         Tuple (taille en décimètres, poids en hectogrammes)
     """
@@ -286,10 +289,8 @@ def get_pokemon_height_weight(pokemon_name):
 def get_pokemon_abilities(pokemon_name):
     """
     Retourne les capacités d'un Pokémon.
-    
     Args:
         pokemon_name: Nom du Pokémon
-    
     Returns:
         Liste des noms des capacités
     """
@@ -303,7 +304,6 @@ def get_pokemon_abilities(pokemon_name):
 def get_pokeball_list():
     """
     Retourne la liste des Pokéballs disponibles dans PokéAPI.
-    
     Returns:
         Liste des noms des Pokéballs
     """
@@ -324,10 +324,8 @@ def get_pokeball_list():
 def get_pokeball_sprite(pokeball_name):
     """
     Retourne l'URL du sprite d'une Pokéball.
-    
     Args:
         pokeball_name: Nom de la Pokéball
-    
     Returns:
         URL du sprite de la Pokéball
     """
@@ -338,8 +336,19 @@ def get_pokeball_sprite(pokeball_name):
     sprite_url = item_data["sprites"]["default"]
     return sprite_url
 
+def open_image_from_url(image_url):
+    """
+    Ouvre et affiche une image depuis une URL.
+    Args:
+        image_url: URL de l'image
+    """
+    urllib.request.urlretrieve(image_url, "temp_image.png")
+    img = Image.open("temp_image.png")
+    img = img.resize((img.width * 20, img.height * 20)) # agrandir l'image
+    img.show()
+
 if __name__ == "__main__":
     # Exemples d'utilisation:
-    print(get_pokeball_list())
-    print(get_pokeball_sprite("poke-ball"))
+    url = get_poke_sprite("zamazenta", home_sprite=True, shiny=True)
+    open_image_from_url(url)
     pass
