@@ -109,9 +109,28 @@ def get_last_pokemon_generation(pokemon_name):
                 break
     return generation
 
+def get_pokemon_types(pokemon_name):
+    """
+    Retourne les types d'un Pokémon donné.
+    
+    Args:
+        pokemon_name: Nom du Pokémon
+    
+    Returns:
+        Liste des types du Pokémon
+    """
+    url = f"https://pokeapi.co/api/v2/pokemon/{pokemon_name}"
+    response = requests.get(url)
+    poke = response.json()
+    
+    types = [t["type"]["name"] for t in poke["types"]]
+    return types
+
+
 if __name__ == "__main__":
     # Exemples d'utilisation:
     open_poke_sprite("bulbasaur", generation=9)
     moves = import_all_learned_moves("bulbasaur", generation=9)
+    
     print(moves)
     pass
