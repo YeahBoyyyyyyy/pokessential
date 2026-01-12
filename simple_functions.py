@@ -126,11 +126,69 @@ def get_pokemon_types(pokemon_name):
     types = [t["type"]["name"] for t in poke["types"]]
     return types
 
+def search_pokemon_list_from_types(type1, type2=None):
+    """
+    Recherche des Pokémon par types.
+    
+    Args:
+        type1: Premier type
+        type2: Deuxième type (optionnel)
+    
+    Returns:
+        Liste des noms des Pokémon correspondant aux types
+    """
+    url = f"https://pokeapi.co/api/v2/type/{type1}"
+    response = requests.get(url)
+    type_data = response.json()
+    
+    pokemon_list = [p["pokemon"]["name"] for p in type_data["pokemon"]] # type_data["pokemon"] est une liste de dictionnaires
+    
+    if type2:
+        url2 = f"https://pokeapi.co/api/v2/type/{type2}"
+        response2 = requests.get(url2)
+        type_data2 = response2.json()
+        
+        pokemon_list_type2 = {p["pokemon"]["name"] for p in type_data2["pokemon"]}
+        # Filtrer les Pokémon qui ont les deux types
+        pokemon_list = [p for p in pokemon_list if p in pokemon_list_type2]
+    
+    return pokemon_list
+
+def get_ability_description(ability_name, language="en"):
+    """
+    Retourne la description d'une capacité dans la langue spécifiée.
+    
+    Args:
+        ability_name: Nom du talent
+        language: Code de la langue (ex: "en", "fr", etc.)
+    Returns:
+        Description du talent
+    """
+    # Petite correction de ability_name pour les capacités avec des espaces ou des traits d'union
+    for i_car in range(len(ability_name)):
+        if ability_name[i_car] == " " or ability_name[i_car] == "_":
+            ability_name[i_car] = "-"
+
+
+    url = f"https://pokeapi.co/api/v2/ability/{ability_name}"
+    response = requests.get(url)
+    ability_data = response.json()
+    desc = None
+    name = None
+    for entry in ability_data["flavor_text_entries"][::-1]: # On prend la dernière entrée pour avoir la description la plus récente
+        print(entry)
+        if entry["language"]["name"] == language:
+            desc = entry["flavor_text"].replace("\n", " ").replace("\f", " ")
+            break
+    for entry in ability_data["names"]:
+        if entry["language"]["name"] == language:
+            name = entry["name"]
+            break
+    return name, desc
 
 if __name__ == "__main__":
     # Exemples d'utilisation:
-    open_poke_sprite("bulbasaur", generation=9)
-    moves = import_all_learned_moves("bulbasaur", generation=9)
-    
-    print(moves)
+    list = get_ability_description("drizzle", language="fr")
+    print(list)
+
     pass
