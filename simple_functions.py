@@ -1,6 +1,8 @@
+import random
 import requests
 from PIL import Image
 import urllib.request
+import difflib 
 
 GENERATION_DICT = {
     "1": "generation-i",
@@ -12,6 +14,13 @@ GENERATION_DICT = {
     "7": "generation-vii",
     "8": "generation-viii",
     "9": "generation-ix",
+}
+
+GUESS_FROM_SPRITE_LANG = {
+    "fr": "Quel est le nom de ce Pokemon ?",
+    "en": "What is the name of this Pokemon?",
+    "es": "¿Cuál es el nombre de este Pokémon?",
+    "de": "Wie heißt dieses Pokémon?",
 }
 
 def get_poke_sprite(pokemon_name, generation=None, game_version=None, shiny=False, female=False, showdown_sprite=False, home_sprite=False, official_artwork=False):
@@ -219,6 +228,21 @@ def get_ability_description(ability_name, language="en"):
 
     return name, desc
 
+def get_pokemon_name_list(pokemon_name):
+    """
+    Retourne une liste de noms de Pokémon similaires à celui donné.
+    Args:
+        pokemon_name: Nom du Pokémon
+    Returns:
+        Liste des noms dans toutes les langues
+    """
+    url = f"https://pokeapi.co/api/v2/pokemon-species/{pokemon_name}"
+    response = requests.get(url)
+    species_data = response.json()
+    
+    name_list = { entry["language"]["name"] : entry["name"] for entry in species_data["names"]}
+    return name_list
+
 def get_pokemon_name_translation(pokemon_name, target_language="fr"):
     """
     Retourne la traduction du nom d'un Pokémon dans la langue spécifiée.
@@ -347,8 +371,38 @@ def open_image_from_url(image_url):
     img = img.resize((img.width * 20, img.height * 20)) # agrandir l'image
     img.show()
 
+def select_random_pokemon():
+    """
+    Sélectionne un Pokémon aléatoire.
+    Returns:
+        Nom du Pokémon sélectionné
+    """
+    url = "https://pokeapi.co/api/v2/pokemon?limit=10000"
+    response = requests.get(url)
+    poke_list = response.json()["results"]
+    
+    import random
+    random_pokemon = random.choice(poke_list)
+    return random_pokemon["name"]
+
+def guess_the_pokemon_from_sprite(language="en"):
+    pokemon_name = select_random_pokemon()
+    L = [False, False, False]
+    L[random.randint(0, 2)] = True
+    gen = random.randint(1,9)
+
+    sprite_url = get_poke_sprite(pokemon_name, generation=gen, showdown_sprite=L[0], home_sprite=L[1], official_artwork=L[2])
+    open_image_from_url(sprite_url)
+    name_list = get_pokemon_name_list(pokemon_name)
+    name_given = input(GUESS_FROM_SPRITE_LANG.get(language, "What is the name of this Pokemon?") + " ")
+
+    if name_given.lower().strip() in [name.lower() for name in name_list.values()]:
+        print("Correct!")
+    else:
+        print(f"Wrong! The correct answer was: {name_list.get(language, pokemon_name)} ({pokemon_name})")
+
 if __name__ == "__main__":
     # Exemples d'utilisation:
-    url = get_poke_sprite("zamazenta", home_sprite=True, shiny=True)
-    open_image_from_url(url)
+    #guess_the_pokemon_from_sprite(language="fr")
+    guess_the_pokemon_from_sprite(language="en")
     pass
